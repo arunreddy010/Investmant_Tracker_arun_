@@ -1,1 +1,695 @@
-
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/index.html b/index.html
+index 33a2a50a560f442baaa9814c217cc9350b9cf9cc..801cc7eac26892a871e89f8ab63a61d8472ed67e 100644
+--- a/index.html
++++ b/index.html
+@@ -1,148 +1,375 @@
+ <!DOCTYPE html>
+ <html lang="en">
+ <head>
+     <meta charset="UTF-8">
+     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+     <title>Clear-Cut Investment Tracker (INR)</title>
+     <script src="https://cdn.tailwindcss.com"></script>
+     <script>
+         tailwind.config = {
+             theme: {
+                 extend: {
+                     fontFamily: {
+                         sans: ['Inter', 'sans-serif'],
+                     },
+                     colors: {
+-                        'primary': '#4f46e5',
++                        'primary': '#6c5ce7',
++                        'primary-dark': '#4b32e5',
+                         'success': '#10b981',
+                         'danger': '#ef4444',
+-                        'card': '#ffffff',
+-                        'background': '#f3f4f6',
++                        'card': '#0b1021',
++                        'background': '#050816',
++                    },
++                    boxShadow: {
++                        glow: '0 10px 60px rgba(108, 92, 231, 0.35)',
+                     }
+                 }
+             }
+         }
+     </script>
+     <style>
+-        body { background-color: #f3f4f6; font-family: 'Inter', sans-serif; }
+-        .data-cell { padding: 10px 8px; border-bottom: 1px solid #e5e7eb; }
++        body {
++            background: radial-gradient(circle at 20% 20%, rgba(108, 92, 231, 0.18), transparent 25%),
++                        radial-gradient(circle at 80% 0%, rgba(16, 185, 129, 0.18), transparent 20%),
++                        #050816;
++            font-family: 'Inter', sans-serif;
++            min-height: 100vh;
++            color: #f8fafc;
++        }
++
++        .glass-card {
++            background: linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
++            border: 1px solid rgba(255,255,255,0.08);
++            backdrop-filter: blur(12px);
++        }
++
++        .data-cell { padding: 10px 8px; border-bottom: 1px solid #1f2937; }
++
++        .floating-badge {
++            animation: pulse 2.4s ease-in-out infinite;
++        }
++
++        @keyframes pulse {
++            0%, 100% { box-shadow: 0 0 0 0 rgba(108, 92, 231, 0.35); }
++            50% { box-shadow: 0 0 0 16px rgba(108, 92, 231, 0); }
++        }
+     </style>
+ </head>
+ <body class="p-4 md:p-8">
+ 
+-    <div id="app" class="max-w-6xl mx-auto bg-card shadow-xl rounded-2xl p-6 md:p-10">
+-        <h1 class="text-3xl font-extrabold text-gray-900 mb-6 border-b pb-3">🎯 Clear-Cut Investment Tracker (INR)</h1>
+-        
++    <div class="max-w-6xl mx-auto mb-10">
++        <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-6">
++            <div>
++                <p class="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-primary bg-white/5 rounded-full border border-white/10 floating-badge">Premium dashboard</p>
++                <h1 class="mt-3 text-4xl md:text-5xl font-extrabold text-white leading-tight">Clear-Cut Investment Tracker</h1>
++                <p class="mt-2 text-lg text-slate-300 max-w-2xl">Authenticate to unlock real-time market intelligence, modernized for discerning investors.</p>
++            </div>
++            <div class="flex items-center gap-3">
++                <div class="glass-card rounded-2xl px-4 py-3 shadow-glow">
++                    <p class="text-xs uppercase tracking-wide text-slate-300">Database</p>
++                    <p id="db-status" class="text-lg font-bold text-white">Connecting...</p>
++                </div>
++                <div id="user-banner" class="glass-card rounded-2xl px-4 py-3 shadow-glow text-right">
++                    <p class="text-xs uppercase tracking-wide text-slate-300">Session</p>
++                    <p class="text-lg font-semibold text-white">Guest</p>
++                </div>
++            </div>
++        </header>
++
++        <div class="grid md:grid-cols-[1.2fr_0.8fr] gap-6 items-start">
++            <div class="glass-card shadow-glow rounded-3xl p-6 md:p-8">
++                <div class="flex items-center justify-between mb-4">
++                    <div>
++                        <p class="text-sm text-slate-300">Welcome back</p>
++                        <h2 class="text-2xl font-bold text-white">Sign in to your command center</h2>
++                    </div>
++                    <div class="h-12 w-12 rounded-full bg-white/10 border border-white/10 flex items-center justify-center shadow-lg">
++                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-primary">
++                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.5 20.25a8.25 8.25 0 0115 0" />
++                        </svg>
++                    </div>
++                </div>
++                <form id="login-form" class="space-y-4" onsubmit="handleLogin(event)">
++                    <div>
++                        <label for="email" class="block text-sm font-medium text-slate-300">Email</label>
++                        <input id="email" type="email" required placeholder="demo@tracker.in" class="mt-1 w-full border border-white/10 bg-white/5 text-white rounded-xl p-3 focus:ring-2 focus:ring-primary focus:outline-none placeholder:text-slate-500">
++                    </div>
++                    <div>
++                        <label for="password" class="block text-sm font-medium text-slate-300">Password</label>
++                        <input id="password" type="password" required placeholder="demo123" class="mt-1 w-full border border-white/10 bg-white/5 text-white rounded-xl p-3 focus:ring-2 focus:ring-primary focus:outline-none placeholder:text-slate-500">
++                    </div>
++                    <button type="submit" class="w-full bg-gradient-to-r from-primary to-primary-dark hover:from-primary-dark hover:to-primary text-white font-semibold py-3 px-4 rounded-xl shadow-glow transition duration-150">Log in</button>
++                    <p class="text-sm text-slate-300">Demo accounts: demo@tracker.in / demo123 or investor@clearcut.in / securepass</p>
++                    <p id="auth-feedback" class="text-sm font-semibold"></p>
++                </form>
++            </div>
++
++            <div class="glass-card shadow-glow rounded-3xl p-6 md:p-8">
++                <div class="flex items-center justify-between mb-4">
++                    <div>
++                        <p class="text-sm text-slate-300">Controls</p>
++                        <h2 class="text-2xl font-bold text-white">Session & Access</h2>
++                    </div>
++                    <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 text-xs uppercase tracking-wide text-slate-200 bg-white/5">
++                        <span class="h-2 w-2 rounded-full bg-success"></span>
++                        Simulated cloud
++                    </span>
++                </div>
++                <p class="text-sm text-slate-300 mb-4">Connect to the simulated ledger, then unlock premium market data.</p>
++                <button id="logout-button" onclick="handleLogout()" class="w-full bg-white/10 hover:bg-danger text-white font-semibold py-3 px-4 rounded-xl shadow-glow transition duration-150 disabled:opacity-60 disabled:cursor-not-allowed" disabled>Log out</button>
++                <div class="mt-5 space-y-2 text-sm text-slate-200">
++                    <p class="flex items-start gap-2"><span class="text-primary">•</span> Live data is only fetched when logged in.</p>
++                    <p class="flex items-start gap-2"><span class="text-primary">•</span> Sessions persist locally for quick return access.</p>
++                    <p class="flex items-start gap-2"><span class="text-primary">•</span> Database connection is simulated for this prototype.</p>
++                </div>
++            </div>
++        </div>
++    </div>
++
++    <div id="app" class="relative max-w-6xl mx-auto glass-card shadow-glow rounded-3xl p-6 md:p-10">
++        <div id="auth-overlay" class="absolute inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center rounded-3xl hidden">
++            <div class="text-center">
++                <p class="text-lg font-semibold text-white">Authentication required</p>
++                <p class="text-sm text-slate-300">Log in above to unlock the tracker and fetch live prices.</p>
++            </div>
++        </div>
++        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
++            <div>
++                <p class="text-sm text-slate-300 uppercase tracking-[0.25em]">Portfolio cockpit</p>
++                <h2 class="text-3xl font-extrabold text-white leading-tight">🎯 INR Investment Radar</h2>
++            </div>
++            <div class="inline-flex items-center gap-3 bg-white/5 border border-white/10 rounded-full px-4 py-2">
++                <div class="h-3 w-3 rounded-full bg-success animate-pulse"></div>
++                <span class="text-sm text-slate-200">Secured workspace</span>
++            </div>
++        </div>
++
+         <!-- 1. Global Setup -->
+-        <div class="bg-gray-50 p-4 rounded-xl mb-8 shadow-inner flex flex-col sm:flex-row justify-between items-center">
+-            <p class="text-lg font-semibold text-gray-700 mb-2 sm:mb-0">Current USD/INR Exchange Rate (Live Simulation):</p>
++        <div class="bg-white/5 border border-white/10 rounded-2xl mb-8 shadow-inner flex flex-col sm:flex-row justify-between items-center px-5 py-4">
++            <p class="text-lg font-semibold text-slate-100 mb-2 sm:mb-0">Current USD/INR Exchange Rate (Live Simulation):</p>
+             <div id="usd-inr-rate-display" class="text-2xl font-bold text-primary">Fetching...</div>
+             <input type="hidden" id="usd-inr-rate" value="0">
+         </div>
+ 
+         <!-- Loading Indicator -->
+         <div id="loading-spinner" class="text-center py-10 hidden">
+             <svg class="animate-spin h-8 w-8 text-primary mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+             </svg>
+-            <p class="mt-2 text-gray-600">Fetching live market data...</p>
++            <p class="mt-2 text-slate-300">Fetching live market data...</p>
+         </div>
+ 
+         <!-- Error Message Box -->
+-        <div id="error-message" class="hidden bg-danger/10 border border-danger text-danger p-3 rounded-lg mb-4 font-medium" role="alert">
++        <div id="error-message" class="hidden bg-danger/20 border border-danger text-white p-3 rounded-lg mb-4 font-medium" role="alert">
+             <p>An error occurred while fetching data. Please check your Tickers or try again later.</p>
+         </div>
+         
+         <!-- 2. Investment Holdings Table -->
+         <div class="overflow-x-auto mb-10">
+-            <table class="min-w-full divide-y divide-gray-200">
+-                <thead class="bg-gray-50">
++            <table class="min-w-full divide-y divide-white/10">
++                <thead class="bg-white/5">
+                     <tr>
+-                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5">Ticker</th>
+-                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Units</th>
+-                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Buy Currency</th>
+-                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg. Cost (Local)</th>
+-                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Live Price (Local)</th>
+-                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-100">Total Cost (INR)</th>
+-                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-100">Current Value (INR)</th>
+-                        <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-100">Gain/Loss (INR)</th>
++                        <th class="px-3 py-3 text-left text-xs font-semibold text-slate-200 uppercase tracking-wider w-1/5">Ticker</th>
++                        <th class="px-3 py-3 text-left text-xs font-semibold text-slate-200 uppercase tracking-wider">Units</th>
++                        <th class="px-3 py-3 text-left text-xs font-semibold text-slate-200 uppercase tracking-wider">Buy Currency</th>
++                        <th class="px-3 py-3 text-left text-xs font-semibold text-slate-200 uppercase tracking-wider">Avg. Cost (Local)</th>
++                        <th class="px-3 py-3 text-left text-xs font-semibold text-slate-200 uppercase tracking-wider">Live Price (Local)</th>
++                        <th class="px-3 py-3 text-left text-xs font-semibold text-slate-200 uppercase tracking-wider bg-white/5">Total Cost (INR)</th>
++                        <th class="px-3 py-3 text-left text-xs font-semibold text-slate-200 uppercase tracking-wider bg-white/5">Current Value (INR)</th>
++                        <th class="px-3 py-3 text-left text-xs font-semibold text-slate-200 uppercase tracking-wider bg-white/5">Gain/Loss (INR)</th>
+                     </tr>
+                 </thead>
+-                <tbody id="holdings-body" class="bg-white divide-y divide-gray-200">
++                <tbody id="holdings-body" class="bg-transparent divide-y divide-white/5">
+                     <!-- Rows will be injected here -->
+                 </tbody>
+             </table>
+         </div>
+ 
+-        <button onclick="addRow()" class="bg-primary hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-150">
+-            + Add Investment
+-        </button>
+-        <button onclick="calculateData()" class="bg-success hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-150 ml-4">
+-            Get Live Data
+-        </button>
++        <div class="flex flex-wrap items-center gap-3">
++            <button onclick="addRow()" class="bg-white/10 hover:bg-primary text-white font-semibold py-2 px-4 rounded-xl shadow-glow transition duration-150">
++                + Add Investment
++            </button>
++            <button onclick="calculateData()" class="bg-success hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-xl shadow-glow transition duration-150">
++                Get Live Data
++            </button>
++        </div>
+         
+         <!-- 3. Summary Metrics -->
+-        <div class="mt-10 pt-6 border-t border-gray-200 grid grid-cols-1 md:grid-cols-3 gap-6">
+-            
+-            <div class="bg-indigo-50 p-5 rounded-xl shadow-lg">
++        <div class="mt-10 pt-6 border-t border-white/10 grid grid-cols-1 md:grid-cols-3 gap-6">
++
++            <div class="bg-white/5 border border-white/10 p-5 rounded-2xl shadow-lg">
+                 <p class="text-sm font-medium text-primary uppercase">Total Invested</p>
+-                <p id="summary-invested" class="text-3xl font-bold text-gray-900 mt-1">₹ 0.00</p>
+-                <p class="text-xs text-gray-500 mt-1">Your capital commitment (F:F SUM)</p>
++                <p id="summary-invested" class="text-3xl font-bold text-white mt-1">₹ 0.00</p>
++                <p class="text-xs text-slate-300 mt-1">Your capital commitment (F:F SUM)</p>
+             </div>
+ 
+-            <div class="bg-indigo-50 p-5 rounded-xl shadow-lg">
++            <div class="bg-white/5 border border-white/10 p-5 rounded-2xl shadow-lg">
+                 <p class="text-sm font-medium text-primary uppercase">Total Current Value</p>
+-                <p id="summary-value" class="text-3xl font-bold text-gray-900 mt-1">₹ 0.00</p>
+-                <p class="text-xs text-gray-500 mt-1">What your portfolio is worth (G:G SUM)</p>
++                <p id="summary-value" class="text-3xl font-bold text-white mt-1">₹ 0.00</p>
++                <p class="text-xs text-slate-300 mt-1">What your portfolio is worth (G:G SUM)</p>
+             </div>
+ 
+-            <div class="bg-indigo-50 p-5 rounded-xl shadow-lg">
++            <div class="bg-white/5 border border-white/10 p-5 rounded-2xl shadow-lg">
+                 <p class="text-sm font-medium text-primary uppercase">Net Profit / Loss</p>
+-                <p id="summary-pnl" class="text-3xl font-bold text-gray-900 mt-1">₹ 0.00</p>
+-                <p class="text-xs text-gray-500 mt-1">Total gains or losses (H:H SUM)</p>
++                <p id="summary-pnl" class="text-3xl font-bold text-white mt-1">₹ 0.00</p>
++                <p class="text-xs text-slate-300 mt-1">Total gains or losses (H:H SUM)</p>
+             </div>
+ 
+         </div>
+     </div>
+ 
+     <script>
+         const apiKey = "AIzaSyBzsnOgZfUZjZnbOqyn5Jl86Mer3hwHBTY"; // API key is handled by the environment
+         const model = "gemini-2.5-flash-preview-09-2025";
+         const apiUrlBase = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+ 
+         let investments = [
+             { ticker: 'NSE:RELIANCE', units: 10, currency: 'INR', cost: 2500 },
+             { ticker: 'NASDAQ:AAPL', units: 5, currency: 'USD', cost: 180 },
+             { ticker: 'CURRENCY:XAUUSD', units: 1, currency: 'USD', cost: 2000 } // Gold Spot
+         ];
+-        
++
++        const database = {
++            connected: false,
++            users: [
++                { email: 'demo@tracker.in', password: 'demo123', name: 'Demo Analyst' },
++                { email: 'investor@clearcut.in', password: 'securepass', name: 'Portfolio Owner' },
++            ],
++        };
++
++        let currentUser = null;
++
++        const appContainer = document.getElementById('app');
+         const usdInrRateInput = document.getElementById('usd-inr-rate');
+         const holdingsBody = document.getElementById('holdings-body');
+         const loadingSpinner = document.getElementById('loading-spinner');
+         const errorMessage = document.getElementById('error-message');
++        const authOverlay = document.getElementById('auth-overlay');
++        const dbStatus = document.getElementById('db-status');
++        const authFeedback = document.getElementById('auth-feedback');
++        const userBanner = document.getElementById('user-banner');
++        const logoutButton = document.getElementById('logout-button');
++        const loginForm = document.getElementById('login-form');
++
++        const setAuthFeedback = (message, tone = 'info') => {
++            const toneMap = {
++                info: 'text-slate-200',
++                success: 'text-success',
++                danger: 'text-danger',
++                warning: 'text-amber-300'
++            };
++            authFeedback.textContent = message;
++            authFeedback.className = `text-sm font-semibold ${toneMap[tone] || toneMap.info}`;
++        };
++
++        const toggleAppLock = (locked) => {
++            authOverlay.classList.toggle('hidden', !locked);
++            if (appContainer) {
++                appContainer.classList.toggle('pointer-events-none', locked);
++                appContainer.classList.toggle('opacity-60', locked);
++            }
++        };
++
++        const persistSession = (user) => {
++            if (user) {
++                localStorage.setItem('investment_tracker_user', JSON.stringify(user));
++            } else {
++                localStorage.removeItem('investment_tracker_user');
++            }
++        };
++
++        const connectToDatabase = async () => {
++            dbStatus.textContent = 'Connecting...';
++            await new Promise(resolve => setTimeout(resolve, 400));
++            database.connected = true;
++            dbStatus.textContent = 'Connected to simulated ledger';
++        };
++
++        const updateAuthUI = () => {
++            if (database.connected) {
++                dbStatus.classList.add('text-success');
++            }
++
++            if (currentUser) {
++                userBanner.innerHTML = `<p class="text-sm text-success">Signed in</p><p class="text-lg font-semibold text-white">${currentUser.name}</p>`;
++                logoutButton.disabled = false;
++                loginForm.classList.add('opacity-60');
++                Array.from(loginForm.elements).forEach(el => el.disabled = true);
++                setAuthFeedback('Session active. Live data ready.', 'success');
++                toggleAppLock(false);
++            } else {
++                userBanner.innerHTML = `<p class="text-sm text-slate-300">Signed out</p><p class="text-lg font-semibold text-white">Guest session</p>`;
++                logoutButton.disabled = true;
++                loginForm.classList.remove('opacity-60');
++                Array.from(loginForm.elements).forEach(el => el.disabled = false);
++                setAuthFeedback('Enter credentials to unlock the tracker.', 'info');
++                toggleAppLock(true);
++            }
++        };
++
++        const hydrateSession = () => {
++            const saved = localStorage.getItem('investment_tracker_user');
++            if (saved) {
++                const parsed = JSON.parse(saved);
++                const exists = database.users.find(u => u.email === parsed.email && u.password === parsed.password);
++                if (exists) {
++                    currentUser = exists;
++                }
++            }
++        };
++
++        const handleLogin = async (event) => {
++            event.preventDefault();
++            const email = document.getElementById('email').value.trim();
++            const password = document.getElementById('password').value.trim();
++
++            if (!database.connected) {
++                await connectToDatabase();
++            }
++
++            const user = database.users.find(u => u.email === email && u.password === password);
++            if (!user) {
++                setAuthFeedback('Invalid credentials. Please try a demo login.', 'danger');
++                toggleAppLock(true);
++                return;
++            }
++
++            currentUser = user;
++            persistSession(user);
++            setAuthFeedback('Logged in successfully. Fetching live data...', 'success');
++            updateAuthUI();
++            calculateData();
++        };
++
++        const handleLogout = () => {
++            currentUser = null;
++            persistSession(null);
++            setAuthFeedback('You have been logged out. Data entry is read-only until you log in again.', 'warning');
++            updateAuthUI();
++        };
+ 
+         /** Utility Functions **/
+         const formatCurrency = (amount) => {
+             if (typeof amount !== 'number' || isNaN(amount)) return '₹ --';
+             return `₹ ${amount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`;
+         };
+ 
+         const formatLocalPrice = (amount, currency) => {
+             if (typeof amount !== 'number' || isNaN(amount)) return '--';
+             const symbol = currency === 'USD' ? '$' : '₹';
+             return `${symbol} ${amount.toFixed(2)}`;
+         };
+ 
+         const showLoading = (show) => {
+             loadingSpinner.classList.toggle('hidden', !show);
+         };
+         
+         const showError = (show) => {
+             errorMessage.classList.toggle('hidden', !show);
+         };
+ 
+         /** API Interaction (Simulating GOOGLEFINANCE) **/
+         
+         // This function fetches the live data (USD/INR rate and stock prices)
+         async function fetchLiveExchangeRate() {
+@@ -160,51 +387,54 @@
+                     const response = await fetch(apiUrlBase, {
+                         method: 'POST',
+                         headers: { 'Content-Type': 'application/json' },
+                         body: JSON.stringify(payload)
+                     });
+ 
+                     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                     
+                     const result = await response.json();
+                     const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                     const rate = parseFloat(text);
+                     
+                     if (rate && !isNaN(rate)) {
+                         usdInrRateInput.value = rate;
+                         document.getElementById('usd-inr-rate-display').textContent = `₹ ${rate.toFixed(2)}`;
+                         return rate;
+                     }
+                 } catch (error) {
+                     console.error(`Attempt ${attempt + 1}: Error fetching exchange rate.`, error);
+                     // Exponential backoff
+                     await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempt)));
+                 }
+             }
+             console.error("Failed to fetch exchange rate after multiple retries. Using fallback.");
+             // Fallback value if API fails
+-            return 83.00; 
++            const fallbackRate = 83.00;
++            usdInrRateInput.value = fallbackRate;
++            document.getElementById('usd-inr-rate-display').textContent = `₹ ${fallbackRate.toFixed(2)} (fallback)`;
++            return fallbackRate;
+         }
+ 
+         async function fetchLivePrices(tickers) {
+             const systemPrompt = "For each ticker provided, find its current market price. Present the results as a comma-separated list of values: Ticker1,Price1,Ticker2,Price2, etc. Do not include any text, currency symbols, or formatting. If a price cannot be found, use 0. Example: NASDAQ:AAPL,175.50,NSE:RELIANCE,2900.25";
+             const userQuery = `Find the current market prices for the following financial tickers: ${tickers.join(', ')}`;
+             
+             const payload = {
+                 contents: [{ parts: [{ text: userQuery }] }],
+                 tools: [{ "google_search": {} }],
+                 systemInstruction: { parts: [{ text: systemPrompt }] },
+             };
+ 
+             for (let attempt = 0; attempt < 3; attempt++) {
+                 try {
+                     const response = await fetch(apiUrlBase, {
+                         method: 'POST',
+                         headers: { 'Content-Type': 'application/json' },
+                         body: JSON.stringify(payload)
+                     });
+ 
+                     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                     
+                     const result = await response.json();
+                     const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                     
+@@ -212,160 +442,187 @@
+                         const priceMap = {};
+                         const parts = text.split(',').map(p => p.trim());
+                         
+                         for (let i = 0; i < parts.length; i += 2) {
+                             const ticker = parts[i];
+                             const price = parseFloat(parts[i+1]);
+                             if (ticker && !isNaN(price)) {
+                                 priceMap[ticker.toUpperCase()] = price;
+                             }
+                         }
+                         return priceMap;
+                     }
+                 } catch (error) {
+                     console.error(`Attempt ${attempt + 1}: Error fetching prices.`, error);
+                     await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempt)));
+                 }
+             }
+             return {}; // Return empty map on failure
+         }
+ 
+ 
+         /** Core Logic **/
+ 
+         // 1. Calculate a single row's metrics
+         function calculateRow(item, usdInrRate) {
+-            const { units, cost, price, currency } = item;
++            const { units = 0, cost = 0, price = 0, currency = 'INR' } = item;
+             
+             // IF(C3="USD",$B$1, 1) part of the formula
+-            const fxMultiplier = currency === 'USD' ? usdInrRate : 1;
++            const safeRate = typeof usdInrRate === 'number' && !isNaN(usdInrRate) ? usdInrRate : 1;
++            const fxMultiplier = currency === 'USD' ? safeRate : 1;
+             
+             // F: Total Cost (INR) = B3 * D3 * FX_Multiplier
+             const totalCost = units * cost * fxMultiplier;
+             
+             // G: Current Value (INR) = B3 * E3 * FX_Multiplier
+             const currentValue = units * price * fxMultiplier;
+             
+             // H: Gain/Loss (INR) = G3 - F3
+             const gainLoss = currentValue - totalCost;
+ 
+             return { totalCost, currentValue, gainLoss };
+         }
+ 
+         // 2. Render the input and calculated data table
+         function renderTable() {
+             holdingsBody.innerHTML = '';
+             investments.forEach((item, index) => {
+                 const tr = document.createElement('tr');
+                 tr.className = 'hover:bg-gray-50';
+                 tr.innerHTML = `
+                     <!-- A: Ticker -->
+-                    <td class="data-cell text-sm font-medium text-gray-900">
+-                        <input type="text" class="w-full p-1 border rounded" value="${item.ticker}" onchange="updateInvestment(${index}, 'ticker', this.value)">
++                    <td class="data-cell text-sm font-medium text-white">
++                        <input type="text" class="w-full p-1 border border-white/10 bg-white/5 text-white rounded" value="${item.ticker}" onchange="updateInvestment(${index}, 'ticker', this.value)">
+                     </td>
+                     <!-- B: Units -->
+-                    <td class="data-cell text-sm text-gray-500">
+-                        <input type="number" class="w-full p-1 border rounded" value="${item.units}" min="0" onchange="updateInvestment(${index}, 'units', parseFloat(this.value) || 0)">
++                    <td class="data-cell text-sm text-slate-200">
++                        <input type="number" class="w-full p-1 border border-white/10 bg-white/5 text-white rounded" value="${item.units}" min="0" onchange="updateInvestment(${index}, 'units', parseFloat(this.value) || 0)">
+                     </td>
+                     <!-- C: Buy Currency -->
+-                    <td class="data-cell text-sm text-gray-500">
+-                        <select class="w-full p-1 border rounded" onchange="updateInvestment(${index}, 'currency', this.value)">
++                    <td class="data-cell text-sm text-slate-200">
++                        <select class="w-full p-1 border border-white/10 bg-white/5 text-white rounded" onchange="updateInvestment(${index}, 'currency', this.value)">
+                             <option value="INR" ${item.currency === 'INR' ? 'selected' : ''}>INR</option>
+                             <option value="USD" ${item.currency === 'USD' ? 'selected' : ''}>USD</option>
+                         </select>
+                     </td>
+                     <!-- D: Avg. Cost/Unit (Local) -->
+-                    <td class="data-cell text-sm text-gray-500">
+-                        <input type="number" class="w-full p-1 border rounded" value="${item.cost}" min="0" onchange="updateInvestment(${index}, 'cost', parseFloat(this.value) || 0)">
++                    <td class="data-cell text-sm text-slate-200">
++                        <input type="number" class="w-full p-1 border border-white/10 bg-white/5 text-white rounded" value="${item.cost}" min="0" onchange="updateInvestment(${index}, 'cost', parseFloat(this.value) || 0)">
+                     </td>
+                     <!-- E: Current Price (Local) - AUTOMATED -->
+-                    <td class="data-cell text-sm text-gray-700 font-semibold">${formatLocalPrice(item.price, item.currency)}</td>
++                    <td class="data-cell text-sm text-slate-100 font-semibold">${formatLocalPrice(item.price, item.currency)}</td>
+                     <!-- F: Total Cost (INR) - CALCULATED -->
+-                    <td class="data-cell text-sm font-medium bg-gray-100 text-gray-700">${formatCurrency(item.totalCost)}</td>
++                    <td class="data-cell text-sm font-medium bg-white/5 text-slate-100">${formatCurrency(item.totalCost)}</td>
+                     <!-- G: Current Value (INR) - CALCULATED -->
+-                    <td class="data-cell text-sm font-medium bg-gray-100 text-gray-700">${formatCurrency(item.currentValue)}</td>
++                    <td class="data-cell text-sm font-medium bg-white/5 text-slate-100">${formatCurrency(item.currentValue)}</td>
+                     <!-- H: Gain/Loss (INR) - CALCULATED -->
+-                    <td class="data-cell text-sm font-bold bg-gray-100 ${item.gainLoss > 0 ? 'text-success' : (item.gainLoss < 0 ? 'text-danger' : 'text-gray-700')}">
++                    <td class="data-cell text-sm font-bold bg-white/5 ${item.gainLoss > 0 ? 'text-success' : (item.gainLoss < 0 ? 'text-danger' : 'text-slate-100')}">
+                         ${formatCurrency(item.gainLoss)}
+                     </td>
+                 `;
+                 holdingsBody.appendChild(tr);
+             });
+             updateSummary();
+         }
+ 
+         // 3. Update the summary totals
++        const asNumber = (value) => (typeof value === 'number' && Number.isFinite(value) ? value : 0);
++
+         function updateSummary() {
+-            const totalInvested = investments.reduce((sum, item) => sum + item.totalCost, 0);
+-            const totalValue = investments.reduce((sum, item) => sum + item.currentValue, 0);
++            const totalInvested = investments.reduce((sum, item) => sum + asNumber(item.totalCost), 0);
++            const totalValue = investments.reduce((sum, item) => sum + asNumber(item.currentValue), 0);
+             const totalPNL = totalValue - totalInvested;
+ 
+             document.getElementById('summary-invested').textContent = formatCurrency(totalInvested);
+             document.getElementById('summary-value').textContent = formatCurrency(totalValue);
+             
+             const pnlElement = document.getElementById('summary-pnl');
+             pnlElement.textContent = formatCurrency(totalPNL);
+-            pnlElement.className = `text-3xl font-bold mt-1 ${totalPNL > 0 ? 'text-success' : (totalPNL < 0 ? 'text-danger' : 'text-gray-900')}`;
++            pnlElement.className = `text-3xl font-bold mt-1 ${totalPNL > 0 ? 'text-success' : (totalPNL < 0 ? 'text-danger' : 'text-white')}`;
+         }
+ 
+         // 4. Handle investment data updates
+         function updateInvestment(index, field, value) {
+             investments[index][field] = value;
+-            // Recalculate if a cost/unit or units change, even without live price
++            // Recalculate on every edit so totals stay truthful, even when live prices are missing
+             const rate = parseFloat(usdInrRateInput.value) || 1;
+-            if (investments[index].price) { // Only calculate if price is known
+-                const calculated = calculateRow(investments[index], rate);
+-                Object.assign(investments[index], calculated);
+-            }
++            const calculated = calculateRow(investments[index], rate);
++            Object.assign(investments[index], calculated);
+             renderTable();
+         }
+ 
+         function addRow() {
+             investments.push({ ticker: '', units: 0, currency: 'INR', cost: 0, price: 0, totalCost: 0, currentValue: 0, gainLoss: 0 });
+             renderTable();
+         }
+ 
+         // 5. Main function to fetch all data and update the entire sheet
+         async function calculateData() {
++            if (!currentUser) {
++                setAuthFeedback('Please log in to request live market data.', 'warning');
++                updateAuthUI();
++                return;
++            }
++
++            if (!database.connected) {
++                await connectToDatabase();
++            }
++
+             showError(false);
+             showLoading(true);
+ 
+             const usdInrRate = await fetchLiveExchangeRate();
+             if (!usdInrRate) {
+                 showLoading(false);
+                 showError(true);
+                 return;
+             }
+ 
+             const tickers = investments.map(i => i.ticker).filter(t => t.trim() !== '');
+-            const priceMap = await fetchLivePrices(tickers);
++            const priceMap = tickers.length ? await fetchLivePrices(tickers) : {};
++            const missingPrices = tickers.length && Object.keys(priceMap).length === 0;
+             
+             investments = investments.map(item => {
+                 let livePrice = 0;
+                 
+                 // Try to match the ticker from the API results
+                 if (priceMap[item.ticker.toUpperCase()]) {
+                     livePrice = priceMap[item.ticker.toUpperCase()];
+                 } 
+                 
+                 // Fallback: If price is 0 (or not found), use the last known cost to prevent total disruption
+                 item.price = livePrice > 0 ? livePrice : item.cost;
+                 
+                 const calculated = calculateRow(item, usdInrRate);
+                 return { ...item, ...calculated };
+             });
+ 
++            if (missingPrices) {
++                setAuthFeedback('Live prices were unavailable; using cost basis as a fallback.', 'warning');
++            }
++
+             showLoading(false);
+             renderTable();
+         }
+ 
+ 
+         // Initialization
+-        window.onload = function() {
++        async function initializeApp() {
++            const baselineRate = parseFloat(usdInrRateInput.value) || 1;
++            investments = investments.map(item => ({ ...item, ...calculateRow(item, baselineRate) }));
+             renderTable();
+-            // Automatically fetch data on load
+-            calculateData(); 
++            await connectToDatabase();
++            hydrateSession();
++            updateAuthUI();
++
++            if (currentUser) {
++                calculateData();
++            }
++        }
++
++        window.onload = function() {
++            initializeApp();
+         };
+ 
+     </script>
+ </body>
+ </html>
+ 
+EOF
+)
